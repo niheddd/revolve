@@ -620,7 +620,7 @@ class Plasticoding(Genotype):
             node = Node()
             node.layer = 'input'
             node.type = 'Input'
-            node.part_id = 'module0'
+            node.part_id = '1'
             node.id = id
             self.phenotype._brain.nodes[id] = node
 

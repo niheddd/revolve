@@ -6,6 +6,8 @@ from pyrevolve.tol.manage import World
 from pyrevolve.SDF.math import Vector3
 import time
 import asyncio
+import os
+import shutil
 
 
 class PopulationConfig:
@@ -155,3 +157,11 @@ class Population:
 		await world.pause(True)
 		delete_future = await world.delete_robot(robot_manager)
 		await world.reset(rall=True, time_only=False, model_only=False)
+
+	async def selected_pop_snapshot(self, path, generation, population):
+
+		shutil.rmtree('experiments/'+path+'/selectedpop_'+str(generation))
+		os.mkdir('experiments/'+path+'/selectedpop_'+str(generation))
+
+		for gene in range(0, len(population)):
+			population[gene].render(path+'/selectedpop_'+str(generation))
