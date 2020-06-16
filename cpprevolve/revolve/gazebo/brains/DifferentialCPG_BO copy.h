@@ -19,8 +19,6 @@
 #include <limbo/tools/random_generator.hpp>
 #include <limbo/opt/nlopt_no_grad.hpp>
 
-#include <galgo/Galgo.hpp>
-
 namespace limbo {
     namespace defaults {
         struct bayes_opt_boptimizer {
@@ -41,9 +39,11 @@ namespace limbo {
         // clang-format off
         /**
         The classic Bayesian optimization algorithm.
+
         \rst
         References: :cite:`brochu2010tutorial,Mockus2013`
         \endrst
+
         This class takes the same template parameters as BoBase. It adds:
         \rst
         +---------------------+------------+----------+---------------+
@@ -52,6 +52,7 @@ namespace limbo {
         |acqui. optimizer     |acquiopt_t  | acquiopt | see below     |
         +---------------------+------------+----------+---------------+
         \endrst
+
         The default value of acqui_opt_t is:
         - ``opt::NLOptNoGrad<Params, nlopt::GN_DIRECT_L_RAND>`` if NLOpt was found in `waf configure`
         - ``opt::Cmaes<Params>`` if libcmaes was found but NLOpt was not found
@@ -85,59 +86,61 @@ namespace limbo {
             template <typename StateFunction, typename AggregatorFunction = FirstElem>
             void optimize(const StateFunction& sfun, std::vector<Eigen::VectorXd> all_samples, std::vector<Eigen::VectorXd> all_observations, const AggregatorFunction& afun = AggregatorFunction(), bool reset = true)
             {
-              this->_init(sfun, afun, reset); //reset
+                this->_init(sfun, afun, reset); //reset
 
-              // Maarten: set observations and samples
-              this->_samples = all_samples;
-              this->_observations = all_observations;
+                // Maarten: set observations and samples
+                this->_samples = all_samples;
+                this->_observations = all_observations;
 
-              if (!this->_observations.empty()) {
-                  _model.compute(this->_samples, this->_observations);
-              }
-              else {
-                  std::cout << "OBSERVATION SET IS EMPTY \n";
-                  _model = model_t(StateFunction::dim_in(), StateFunction::dim_out());
-              }
-              acqui_optimizer_t acqui_optimizer;
+                if (!this->_observations.empty()) {
+                    _model.compute(this->_samples, this->_observations);
+                }
+                else {
+                    std::cout << "OBSERVATION SET IS EMPTY \n";
+                    _model = model_t(StateFunction::dim_in(), StateFunction::dim_out());
+                }
+                acqui_optimizer_t acqui_optimizer;
 
-              struct timeval timeStart, timeEnd;
-              double timeDiff;
+                struct timeval timeStart, timeEnd;
+                double timeDiff;
 
-              while (!this->_stop(*this, afun)) {
-                  gettimeofday(&timeStart,NULL);
-                  acquisition_function_t acqui(_model, this->_current_iteration);
+                while (!this->_stop(*this, afun)) {
 
-                  auto acqui_optimization =
-                      [&](const Eigen::VectorXd& x, bool g) { return acqui(x, afun, g); };
-                  Eigen::VectorXd starting_point = tools::random_vector(StateFunction::dim_in(), Params::bayes_opt_bobase::bounded());
+                    gettimeofday(&timeStart,NULL);
 
-                  // new samples are from the acquisition optimizer
-                  Eigen::VectorXd new_sample = acqui_optimizer(acqui_optimization, starting_point, Params::bayes_opt_bobase::bounded());
+                    acquisition_function_t acqui(_model, this->_current_iteration);
 
-                  ///Evaluate a sample and add the result to the 'database'(sample/observations vectors)--it does not update the model
-                  this->eval_and_add(sfun, new_sample); //add new_sample to _sample and sfun to _observations in bo_base.hpp
+                    auto acqui_optimization =
+                            [&](const Eigen::VectorXd& x, bool g) { return acqui(x, afun, g); };
+                    Eigen::VectorXd starting_point = tools::random_vector(StateFunction::dim_in(), Params::bayes_opt_bobase::bounded());
 
-                  this->_update_stats(*this, afun);
+                    // new samples are from the acquisition optimizer
+                    Eigen::VectorXd new_sample = acqui_optimizer(acqui_optimization, starting_point, Params::bayes_opt_bobase::bounded());
 
-                  _model.add_sample(this->_samples.back(), this->_observations.back());
+                    ///Evaluate a sample and add the result to the 'database'(sample/observations vectors)--it does not update the model
+                    this->eval_and_add(sfun, new_sample);
 
-                  if (Params::bayes_opt_boptimizer::hp_period() > 0
-                      && (this->_current_iteration + 1) % Params::bayes_opt_boptimizer::hp_period() == 0)
-                    _model.optimize_hyperparams();
+                    this->_update_stats(*this, afun);
 
-                  this->_current_iteration++;
-                  this->_total_iterations++;
+                    _model.add_sample(this->_samples.back(), this->_observations.back());
 
-                  gettimeofday(&timeEnd,NULL);
+                    if (Params::bayes_opt_boptimizer::hp_period() > 0
+                        && (this->_current_iteration + 1) % Params::bayes_opt_boptimizer::hp_period() == 0)
+                        _model.optimize_hyperparams();
 
-                  timeDiff = 1000000 * (timeEnd.tv_sec - timeStart.tv_sec)
-                             + timeEnd.tv_usec - timeStart.tv_usec; //tv_sec: value of second, tv_usec: value of microsecond
-                  timeDiff/=1000;
+                    this->_current_iteration++;
+                    this->_total_iterations++;
 
-//                  std::ofstream ctime;
-//                  ctime.open("../ctime.txt", std::ios::app);
-//                  ctime << std::fixed << timeDiff << std::endl;
-              }
+                    gettimeofday(&timeEnd,NULL);
+
+                    timeDiff = 1000000 * (timeEnd.tv_sec - timeStart.tv_sec)
+                               + timeEnd.tv_usec - timeStart.tv_usec; //tv_sec: value of second, tv_usec: value of microsecond
+                    timeDiff/=1000;
+
+                    std::ofstream ctime;
+                    ctime.open("../ctime.txt", std::ios::app);
+                    ctime << std::fixed << timeDiff << std::endl;
+                }
             }
 
             /// return the best observation so far (i.e. max(f(x)))
@@ -162,7 +165,7 @@ namespace limbo {
 
             /// Return a reference to the last sample. Used for implementation with revolve
             const Eigen::VectorXd& last_sample(){
-                return this->_samples.back(); //back(): return the last elelment of _samples
+                return this->_samples.back();
             }
 
             const model_t& model() const { return _model; }

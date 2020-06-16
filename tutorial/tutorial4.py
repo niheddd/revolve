@@ -18,7 +18,7 @@ from pyrevolve.util.supervisor.simulator_queue import SimulatorQueue
 from pyrevolve.custom_logging.logger import logger
 
 
-# ./revolve.py --simulator-cmd=gazebo --manager tutorial/tutorial4.py
+# ./revolve.py --simulator-cmd=gazebo --manager=tutorial/tutorial4.py
 async def run():
     """
     The main coroutine, which is started below.
@@ -26,7 +26,7 @@ async def run():
 
     # experiment params #
     num_generations = 10
-    population_size = 20
+    population_size = 10
     offspring_size = 10
 
     genotype_conf = PlasticodingConfig(
@@ -82,6 +82,13 @@ async def run():
     n_cores = settings.n_cores
 
     settings = parser.parse_args()
+    
+  #  # load robot file
+   # robot = RevolveBot(_id=settings.test_robot)
+    #robot.load_file("/Users/nihed/Desktop/nihedssnakes/nihedssnake6.yaml", #conf_type='yaml')
+    #robot.save_file(f'{"/Users/nihed/Desktop/nihedssnakes/nihedssnake6.yaml"}.sdf', conf_type='sdf')
+    
+    
     simulator_queue = SimulatorQueue(n_cores, settings, settings.port_start)
     await simulator_queue.start()
 

@@ -23,8 +23,8 @@ min_lines = 1480
 run_gazebo = False
 n_runs = 15 # Naar 20
 n_jobs = 30
-my_yaml_path = "experiments/bo_learner/yaml/"
-yaml_model = "babyC.yaml"
+my_yaml_path = "/Users/nihed/Desktop/nihedssnakes/"
+yaml_model = "nihedssnake6.yaml"
 manager = "experiments/bo_learner/manager.py"
 python_interpreter = ".venv/bin/python3"
 search_space = {
@@ -47,7 +47,7 @@ start_port = 11000
 finished = False
 
 # Make in revolve/build to allow runs from terminal
-os.system('cmake /home/gongjinlan/projects/revolve/ -DCMAKE_BUILD_TYPE="Release"')
+os.system('cmake /Users/nihed/revolve/thesissnake/ -DCMAKE_BUILD_TYPE="Release"')
 os.system("make -j60")
 
 def change_parameters(original_file, parameters):

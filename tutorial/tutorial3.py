@@ -14,7 +14,7 @@ from pyrevolve.evolution import fitness
 from pyrevolve.SDF.math import Vector3
 
 
-# ./revolve.py --simulator-cmd=gazebo --manager tutorial/tutorial3.py
+# ./revolve.py --simulator-cmd=gazebo --manager=tutorial/tutorial3.py
 async def run():
     """
     The main coroutine, which is started below
@@ -50,8 +50,8 @@ async def run():
 
     # load robot file
     robot = RevolveBot(_id=settings.test_robot)
-    robot.load_file("experiments/examples/yaml/spider.yaml", conf_type='yaml')
-    robot.save_file(f'{"experiments/examples/yaml/spider.yaml"}.sdf', conf_type='sdf')
+    robot.load_file("/Users/nihed/Desktop/nihedssnakes/nihedssnake6.yaml", conf_type='yaml')
+    robot.save_file(f'{"/Users/nihed/Desktop/nihedssnakes/nihedssnake6.yaml"}.sdf', conf_type='sdf')
 
     # insert robot into the simulator
     robot_manager = await connection.insert_robot(robot, Vector3(0, 0, 0.25), life_timeout=None)

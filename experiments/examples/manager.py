@@ -17,7 +17,7 @@ async def run():
     """
     The main coroutine, which is started below.
     """
-    robot_file_path = "experiments/examples/yaml/spider.yaml"
+    robot_file_path = "/Users/nihed/Desktop/nihedssnakes/nihedssnake6.yaml"
 
     # Parse command line / file input arguments
     settings = parser.parse_args()
