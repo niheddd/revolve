@@ -26,7 +26,7 @@ n_jobs = 4
 my_yaml_path = "experiments/bo_learner/yaml/"
 yaml_model = "babyA.yaml"
 manager = "experiments/bo_learner/manager.py"
-python_interpreter = "~/snake_workspace/revolve/.venv/bin/python3"
+python_interpreter = "~/documents/nihedsrevolve/revolve/.venv/bin/python3"
 search_space = {
     # 'load_brain': ["/Users/lan/projects/revolve/output/cpg_bo/one/main_1560413639/0/0/best_brain.txt"],
     'init_method': ["LHS"],
@@ -40,7 +40,7 @@ start_port = 19000
 finished = False
 
 # Make in revolve/build to allow runs from terminal
-os.system('cmake ~/snake_workspace/revolve/ -DCMAKE_BUILD_TYPE="Release"')
+os.system('cmake ~/documents/nihedsrevolve/revolve/ -DCMAKE_BUILD_TYPE="Release"')
 os.system("make -j4")
 
 def change_parameters(original_file, parameters):

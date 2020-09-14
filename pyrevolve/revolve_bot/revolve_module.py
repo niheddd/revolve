@@ -1,8 +1,10 @@
 """
 Class containing the body parts to compose a Robogen robot
 """
+import math
 from collections import OrderedDict
 from enum import Enum
+import numpy as np
 
 from pyrevolve import SDF
 
@@ -22,20 +24,52 @@ def grams(x):
 
 # Module Orientation
 class Orientation(Enum):
-    SOUTH = 0
-    NORTH = 1
-    EAST = 2
-    WEST = 3
+    BACK = 0
+    FORWARD = 1
+    RIGHT = 2
+    LEFT = 3
 
     def short_repr(self):
-        if self == self.SOUTH:
-            return 'S'
-        elif self == self.NORTH:
-            return 'N'
-        elif self == self.EAST:
-            return 'E'
-        elif self == self.WEST:
-            return 'W'
+        if self == self.BACK:
+            return 'B'
+        elif self == self.FORWARD:
+            return 'F'
+        elif self == self.RIGHT:
+            return 'R'
+        elif self == self.LEFT:
+            return 'L'
+        else:
+            assert False
+
+    def get_slot_rotation_matrix(self):
+        if self == self.BACK:
+            return rotate_matrix_z_axis(math.pi) # 180
+        elif self == self.FORWARD:
+            return rotate_matrix_z_axis(0.0)
+        elif self == self.RIGHT:
+            return rotate_matrix_z_axis(math.pi / 2.0) # 90
+        elif self == self.LEFT:
+            return rotate_matrix_z_axis(math.pi / -2.0) # -90
+
+
+def rotate_matrix_z_axis(angle):
+    z_rotation_matrix = np.array([
+        [round(np.cos(angle)), -1*round(np.sin(angle)), 0],
+        [round(np.sin(angle)),    round(np.cos(angle)), 0],
+        [0,                                          0, 1]
+        ])
+
+    return z_rotation_matrix
+
+
+def rotate_matrix_x_axis(angle):
+    x_rotation_matrix = np.array([
+        [1,                      0,                       0],
+        [0,   round(np.cos(angle)), -1*round(np.sin(angle))],
+        [0,   round(np.sin(angle)),    round(np.cos(angle))]
+    ])
+
+    return x_rotation_matrix
 
 
 class RevolveModule:
@@ -55,6 +89,7 @@ class RevolveModule:
         self.rgb = None  # RevolveModule.DEFAULT_COLOR
         self.substrate_coordinates = None
         self.children = [None, None, None, None]
+        self.info = None
 
     def color(self):
         return self.rgb if self.rgb is not None else self.DEFAULT_COLOR
@@ -136,7 +171,7 @@ class RevolveModule:
         has_children = False
 
         children = {}
-        for i, child in enumerate(self.children):
+        for i, child in self.iter_children():
             if child is not None:
                 children[i] = child.to_yaml()
                 has_children = True
@@ -176,7 +211,7 @@ class RevolveModule:
         return visual, collision, None
 
     def boxslot(self, orientation=None):
-        orientation = Orientation.SOUTH if orientation is None else orientation
+        orientation = Orientation.BACK if orientation is None else orientation
         return BoxSlot(self.possible_slots(), orientation)
 
     def possible_slots(self):
@@ -210,11 +245,12 @@ class CoreModule(RevolveModule):
     TYPE = "CoreComponent"
     VISUAL_MESH = 'model://rg_robot/meshes/CoreComponent.dae'
     SLOT_COORDINATES = 0.089 / 2.0
-    COLLISION_BOX = (0.089, 0.089, 0.045)
-    MASS = grams(90)
+    COLLISION_BOX = (0.089, 0.089, 0.0603)
+    MASS = grams(250)
 
     def __init__(self):
         super().__init__()
+        self.substrate_coordinates = (0, 0, 0)
 
     def possible_slots(self):
         return (
@@ -237,15 +273,16 @@ class ActiveHingeModule(RevolveModule):
     TYPE = 'ActiveHinge'
     VISUAL_MESH_FRAME = 'model://rg_robot/meshes/ActiveHinge_Frame.dae'
     VISUAL_MESH_SERVO = 'model://rg_robot/meshes/ActiveCardanHinge_Servo_Holder.dae'
-    COLLISION_BOX_FRAME = (2.20e-02, 3.575e-02, 1.0e-02)
-    COLLISION_BOX_SERVO = (2.45e-02, 2.575e-02, 1.5e-02)
-    COLLISION_BOX_SERVO_2 = (1.0e-3, 3.4e-2, 3.4e-02)
+
+    COLLISION_BOX_FRAME = (4.525e-02, 5.3e-02, 1.65891e-02)
+    COLLISION_BOX_SERVO = (5.83e-02, 5.12e-02, 2.0e-02)
+    COLLISION_BOX_SERVO_2 = (2.0e-3, 5.3e-2, 5.3e-02)
     COLLISION_BOX_SERVO_OFFSET = (
         SDF.math.Vector3(0, 0, 0),
-        SDF.math.Vector3(-0.0091, 0, 0),
+        SDF.math.Vector3(-1.0e-02, 0, 0),
     )
-    MASS_FRAME = grams(1.7)
-    MASS_SERVO = grams(9)
+    MASS_FRAME = grams(11)
+    MASS_SERVO = grams(58)
 
     def __init__(self):
         super().__init__()
@@ -282,12 +319,12 @@ class ActiveHingeModule(RevolveModule):
         visual_servo.append(geometry)
 
         collision_servo = SDF.Collision(name_servo, self.MASS_SERVO)
-        collision_servo.translate(SDF.math.Vector3(0.002375, 0, 0))
+        collision_servo.translate(SDF.math.Vector3(-0.018, 0, 0))
         geometry = SDF.BoxGeometry(self.COLLISION_BOX_SERVO)
         collision_servo.append(geometry)
 
         collision_servo_2 = SDF.Collision(name_servo2, 0)
-        collision_servo_2.translate(SDF.math.Vector3(0.01175, 0.001, 0))
+        collision_servo_2.translate(SDF.math.Vector3(0.02815, 0, 0))
         geometry = SDF.BoxGeometry(self.COLLISION_BOX_SERVO_2)
         collision_servo_2.append(geometry)
 
@@ -299,7 +336,7 @@ class ActiveHingeModule(RevolveModule):
                           coordinates=self.substrate_coordinates,
                           motorized=True)
 
-        joint.set_position(SDF.math.Vector3(-0.0085, 0, 0))
+        joint.set_position(SDF.math.Vector3(-0.0299, 0, 0))
 
         return visual_frame, \
                [collision_frame], \
@@ -324,7 +361,7 @@ class ActiveHingeModule(RevolveModule):
         )
 
     def boxslot_frame(self, orientation=None):
-        orientation = Orientation.SOUTH if orientation is None else orientation
+        orientation = Orientation.BACK if orientation is None else orientation
         boundaries = self.possible_slots_frame()
         return BoxSlotJoints(
             boundaries,
@@ -333,15 +370,15 @@ class ActiveHingeModule(RevolveModule):
         )
 
     def boxslot_servo(self, orientation=None):
-        orientation = Orientation.SOUTH if orientation is None else orientation
+        orientation = Orientation.BACK if orientation is None else orientation
         boundaries = self.possible_slots_servo()
         return BoxSlotJoints(boundaries, orientation)
 
     def boxslot(self, orientation=None):
-        orientation = Orientation.SOUTH if orientation is None else orientation
-        if orientation is Orientation.SOUTH:
+        orientation = Orientation.BACK if orientation is None else orientation
+        if orientation is Orientation.BACK:
             return self.boxslot_frame(orientation)
-        elif orientation is Orientation.NORTH:
+        elif orientation is Orientation.FORWARD:
             return self.boxslot_servo(orientation)
         else:
             raise RuntimeError("Invalid orientation")
@@ -353,9 +390,9 @@ class BrickModule(RevolveModule):
     """
     TYPE = "FixedBrick"
     VISUAL_MESH = 'model://rg_robot/meshes/FixedBrick.dae'
-    SLOT_COORDINATES = 3.8e-2 / 2.0
-    COLLISION_BOX = (4.1e-2, 4.1e-2, 3.55e-02)
-    MASS = grams(10.2)
+    SLOT_COORDINATES = 0.06288625/ 2.0
+    COLLISION_BOX = (0.06288625, 0.06288625, 0.0603)
+    MASS = grams(30)
 
     def __init__(self):
         super().__init__()
@@ -397,8 +434,8 @@ class TouchSensorModule(RevolveModule):
         self.children = {}
 
     def boxslot(self, orientation=None):
-        orientation = Orientation.SOUTH if orientation is None else orientation
-        assert (orientation is Orientation.SOUTH)
+        orientation = Orientation.BACK if orientation is None else orientation
+        assert (orientation is Orientation.BACK)
         return BoxSlotTouchSensor(self.possible_slots())
 
     def possible_slots(self):
@@ -440,13 +477,13 @@ class BoxSlot:
 
     def _calculate_box_slot_pos(self, boundaries, slot: Orientation):
         # boundaries = collision_elem.boundaries
-        if slot == Orientation.SOUTH:
+        if slot == Orientation.BACK:
             return SDF.math.Vector3(0, boundaries[1][0], 0)
-        elif slot == Orientation.NORTH:
+        elif slot == Orientation.FORWARD:
             return SDF.math.Vector3(0, boundaries[1][1], 0)
-        elif slot == Orientation.EAST:
+        elif slot == Orientation.RIGHT:
             return SDF.math.Vector3(boundaries[0][1], 0, 0)
-        elif slot == Orientation.WEST:
+        elif slot == Orientation.LEFT:
             return SDF.math.Vector3(boundaries[0][0], 0, 0)
         else:
             raise RuntimeError('invalid module orientation: {}'.format(slot))
@@ -456,13 +493,13 @@ class BoxSlot:
         """
         Return slot tangent
         """
-        if slot == Orientation.SOUTH:
+        if slot == Orientation.BACK:
             return SDF.math.Vector3(0, 0, 1)
-        elif slot == Orientation.NORTH:
+        elif slot == Orientation.FORWARD:
             return SDF.math.Vector3(0, 0, 1)
-        elif slot == Orientation.EAST:
+        elif slot == Orientation.RIGHT:
             return SDF.math.Vector3(0, 0, 1)
-        elif slot == Orientation.WEST:
+        elif slot == Orientation.LEFT:
             return SDF.math.Vector3(0, 0, 1)
         # elif slot == 4:
         #     # Right face tangent: back face
@@ -481,9 +518,9 @@ class BoxSlotJoints(BoxSlot):
         super().__init__(boundaries, orientation)
 
     def _calculate_box_slot_pos(self, boundaries, slot: Orientation):
-        if slot == Orientation.SOUTH:
+        if slot == Orientation.BACK:
             return SDF.math.Vector3(boundaries[0][0], 0, 0) + self.offset[0]
-        elif slot == Orientation.NORTH:
+        elif slot == Orientation.FORWARD:
             return SDF.math.Vector3(boundaries[0][1], 0, 0) + self.offset[1]
         else:
             raise RuntimeError('invalid module orientation: {}'.format(slot))
@@ -493,9 +530,9 @@ class BoxSlotJoints(BoxSlot):
         """
         Return slot tangent
         """
-        if slot == Orientation.SOUTH:
+        if slot == Orientation.BACK:
             return SDF.math.Vector3(0, 0, 1)
-        elif slot == Orientation.NORTH:
+        elif slot == Orientation.FORWARD:
             return SDF.math.Vector3(0, 0, 1)
         else:
             raise RuntimeError("Invalid orientation")
@@ -503,10 +540,10 @@ class BoxSlotJoints(BoxSlot):
 
 class BoxSlotTouchSensor(BoxSlot):
     def __init__(self, boundaries):
-        super().__init__(boundaries, Orientation.SOUTH)
+        super().__init__(boundaries, Orientation.BACK)
 
     def _calculate_box_slot_pos(self, boundaries, slot: Orientation):
-        if slot == Orientation.SOUTH:
+        if slot == Orientation.BACK:
             return SDF.math.Vector3(boundaries[0][0], 0, 0)
         else:
             raise RuntimeError('invalid module orientation: {}'.format(slot))
@@ -516,7 +553,7 @@ class BoxSlotTouchSensor(BoxSlot):
         """
         Return slot tangent
         """
-        if slot == Orientation.SOUTH:
+        if slot == Orientation.BACK:
             return SDF.math.Vector3(0, 1, 0)
         else:
             raise RuntimeError("Invalid orientation")
